@@ -1,11 +1,10 @@
 <template>
     <div class="py-8 px-4 min-h-screen bg-fuchsia-5 ">
-        <div class="max-w-6xl mx-auto bg-fuchsia-50 rounded-2xl p-6 border border-fuchsia-300 shadow-outside mb-[150px]">
+        <div class="max-w-6xl mx-auto bg-fuchsia-50 rounded-2xl p-6 border border-fuchsia-300 shadow-outside mb-[100px]">
             <div class="flex justify-between mb-4">
                 <h2 class="text-3xl font-bold text-gray-800">
                 花見 <i class="font-normal"> hanami </i> - Japan Cherry Blossom Bloom Map
                 </h2>
-
                 <div class="flex justify-end mb-2">
                     <button
                         @click="activeView = activeView === 'map' ? 'scatter' : 'map'"
@@ -16,6 +15,7 @@
                     </button>
                 </div>
             </div>
+                <a class="text-sm text-gray-400" href="https://github.com/Kanahe1800/hanami-bloom-prediction" target="_blank">Data Source: https://github.com/Kanahe1800/hanami-bloom-prediction</a>
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
@@ -91,8 +91,8 @@
 
                                 <p class="text-lg font-bold text-gray-800">Map Controls</p>
                                 
-                                <p v-if="showMapControls" class="text-sm text-gray-600" @click="showMapControls = !showMapControls" >hide</p>
-                                <p v-else class="text-sm text-gray-600" @click="showMapControls = !showMapControls">show</p>
+                                <p v-if="showMapControls" class="text-sm text-gray-600 cursor-pointer" @click="showMapControls = !showMapControls" >hide</p>
+                                <p v-else class="text-sm text-gray-600 cursor-pointer" @click="showMapControls = !showMapControls">show</p>
                             </div>
                             
                             <div v-if="showMapControls" class="flex items-center gap-3 p-4 rounded-lg bg-fuchsia-5 border border-gray-200 inset-shadow-small">
@@ -229,7 +229,6 @@
                     class="w-full h-2 rounded-lg appearance-none cursor-pointer"
                     :class="isAnimating ? 'bg-gray-300' : 'bg-gray-600'"
                 >
-
             </div>
         </div>
     </div>
@@ -241,7 +240,9 @@
     import * as echarts from 'echarts'
     import * as Papa from 'papaparse'
 
+
     import japanGeoJson from '@/assets/japan.geo.json'
+    const csvFile = ref('/all_cities_cat.csv')
 
     const selectedYear = ref(2025)
     const fullData = ref([])
@@ -252,7 +253,6 @@
     const cityPointSize = ref(20)
     const mapZoomLevel = ref(1.5)
     const selectedCityStats = ref(null)
-    const chartRef = ref(null)
     const activeView = ref('map')
     const showMapControls = ref('true')
     const xAxisKey = ref('day')
@@ -287,7 +287,7 @@
     const loadCsvData = async () => {
         isLoading.value = true;
 
-        const response = await fetch('/all_cities_cat.csv');
+        const response = await fetch(csvFile.value);
         if (!response.ok) {
             console.error("CSV fetch failed.");
             isLoading.value = false;
@@ -325,25 +325,21 @@
             .filter(d => d.seasonal_year === selectedYear.value)
             .map(d => ({
                 name: d.city_name,
-                // Order: [lon, lat, elevation, bloom_day_of_year]
                 value: [d.longitude, d.latitude, d.elevation, d.bloom_day_of_year], 
                 city_name: d.city_name
             }));
     });
 
     const handleChartHover = params => {
-        // Clear city stats if hovering over nothing important
         if (!params || (params.seriesType !== 'scatter' && params.componentType !== 'geo')) {
             selectedCityStats.value = null;
             return;
         }
 
-        // Handle Scatter View hover
         if (activeView.value === 'scatter') {
             const cityData = scatterData.value.find(d => d.name === params.name);
             if (!cityData) return;
 
-            // In scatterData array, bloom_day_of_year is the last element (index 3)
             const day = cityData.value[3]; 
             const bloomDate = dayOfYearToDate(day, selectedYear.value);
 
@@ -357,11 +353,9 @@
             return; 
         }
         
-        // Handle Map View hover
         if (activeView.value === 'map') {
             if (params.seriesType === 'scatter') {
                 const year = selectedYear.value;
-                // Scatter data format: [lon, lat, elevation, day]
                 const [lon, lat, elevation ,day] = params.value; 
                 const bloomDate = dayOfYearToDate(day, year);
 
@@ -421,17 +415,14 @@
     };
 
     onUnmounted(() => {
-        // Clear the interval when the component is destroyed to prevent memory leaks
         stopAnimation(); 
     });
-    // -----------------------
 
     onMounted(() => {
         echarts.registerMap("japan", processedJapanGeoJson);
         loadCsvData();
     });
 
-    // MAP
     const chartOption = computed(() => ({
         backgroundColor: '#fff0', 
 
