@@ -1,10 +1,11 @@
 <script setup>
-  import JapanBloomMapVue from './components/JapanBloomMap.vue';
+    import JapanBloomMapVue from './components/JapanBloomMap.vue';
+
 </script>
 
 <template>
   <div>
-    <JapanBloomMapVue />
+    <JapanBloomMapVue/>
   </div>
 </template>
 
@@ -15,5 +16,9 @@
       font-family: "Inter", "Noto Sans JP", 'Arial', sans-serif;
       font-optical-sizing: auto;
   }
+  body {
+  background: #223;
+  overflow: hidden;
+}
 </style>
 
