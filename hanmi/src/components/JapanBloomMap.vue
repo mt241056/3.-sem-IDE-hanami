@@ -175,7 +175,7 @@
         </div>
 
         <div class="lg:col-span-2 h-[350px] rounded-xl p-2 pb-8 border border-fuchsia-300 relative overflow-hidden">
-          <v-chart class="chart -mt-4" :option="cityHistoryChartOption" autoresize />
+          <v-chart class="chart" :option="cityHistoryChartOption" autoresize />
         </div>
       </div>
       <div class="bg-fuchsia-5 p-8 rounded-2xl border border-fuchsia-300 text-center mb-8 inset-shadow" v-else>
@@ -352,23 +352,81 @@
 
     const cityHistoryChartOption = computed(() => {
       if (!selectedCityName.value) return {};
+      
       const cityData = fullData.value
         .filter(d => d.city_name === selectedCityName.value)
         .sort((a, b) => a.seasonal_year - b.seasonal_year);
 
+      if (cityData.length === 0) return {};
+
+      // Prepare data for regression
+      // X = years, Y = bloom day of year
+      const regressionData = cityData.map(d => [d.seasonal_year, d.bloom_day_of_year]);
+      
+      // Calculate Linear Regression (y = mx + b)
+      const n = regressionData.length;
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+      
+      regressionData.forEach(([x, y]) => {
+        sumX += x;
+        sumY += y;
+        sumXY += x * y;
+        sumXX += x * x;
+      });
+
+      const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+      const intercept = (sumY - slope * sumX) / n;
+
+      // Create the start and end points for the trend line
+      const firstYear = cityData[0].seasonal_year;
+      const lastYear = cityData[cityData.length - 1].seasonal_year;
+      const trendLinePoints = [
+        [firstYear.toString(), (slope * firstYear + intercept).toFixed(2)],
+        [lastYear.toString(), (slope * lastYear + intercept).toFixed(2)]
+      ];
+
       return {
         tooltip: { trigger: 'axis' },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: false },
-        xAxis: { type: 'category', data: cityData.map(d => d.seasonal_year) },
-        yAxis: { type: 'value', inverse: false, name: 'Days since Jan 1st', splitLine: { show: false } },
-        series: [{
-          name: 'Bloom Day',
-          type: 'line',
-          smooth: true,
-          data: cityData.map(d => d.bloom_day_of_year),
-          itemStyle: { color: '#db2777' },
-          areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#fbcfe8' }, { offset: 1, color: '#fff' }]) }
-        }]
+        legend: { data: ['Bloom Day', 'Trend Line'], bottom: 0 },
+        title: {text: "Days since Jan 1st"},
+        grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+        xAxis: { 
+          type: 'category', 
+          data: cityData.map(d => d.seasonal_year.toString()),
+          axisLabel: { color: '#666' }
+        },
+        yAxis: { 
+          type: 'value',
+          splitLine: { lineStyle: { type: 'dashed' } } 
+        },
+        series: [
+          {
+            name: 'Bloom Day',
+            type: 'line',
+            smooth: true,
+            data: cityData.map(d => d.bloom_day_of_year),
+            itemStyle: { color: '#db2777' },
+            symbolSize: 6,
+            areaStyle: { 
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(219, 39, 119, 0.2)' }, 
+                { offset: 1, color: 'rgba(219, 39, 119, 0)' }
+              ]) 
+            }
+          },
+          {
+            name: 'Trend Line',
+            type: 'line',
+            data: cityData.map(d => (slope * d.seasonal_year + intercept).toFixed(2)),
+            symbol: 'none',
+            lineStyle: { 
+              type: 'dashed', 
+              color: '#4b5563', 
+              width: 2 
+            },
+            z: 10 // Ensure it sits on top
+          }
+        ]
       };
     });
 
