@@ -468,13 +468,51 @@
           }));
     });
 
-    const handleChartHover = params => {
-      if (!params) { selectedCityStats.value = null; return; }
-      const d = params.seriesType === 'scatter' ? params.value : null;
-      if (d) {
-        selectedCityStats.value = { name: params.name, year: selectedYear.value, date: dayOfYearToDate(d[3], selectedYear.value), day: d[3], isCity: true };
-      }
+   const handleChartHover = params => {
+        if (!params || (params.seriesType !== 'scatter' && params.componentType !== 'geo')) {
+            selectedCityStats.value = null;
+            return;
+        }
+        if (activeView.value === 'scatter') {
+            const cityData = scatterData.value.find(d => d.name === params.name);
+            if (!cityData) return;
+            const day = cityData.value[3]; 
+            const bloomDate = dayOfYearToDate(day, selectedYear.value);
+            selectedCityStats.value = {
+                name: params.name,
+                year: selectedYear.value,
+                date: bloomDate,
+                day: day,
+                isCity: true
+            };
+            return; 
+        }
+        if (activeView.value === 'map') {
+            if (params.seriesType === 'scatter') {
+                const year = selectedYear.value;
+                const [lon, lat, elevation ,day] = params.value; 
+                const bloomDate = dayOfYearToDate(day, year);
+                selectedCityStats.value = {
+                    name: params.name,
+                    year: year,
+                    date: bloomDate,
+                    day: day,
+                    elevation: elevation,
+                    isCity: true
+                };
+                return; 
+            }
+            if (params.componentType === 'geo' && params.name) {
+                selectedCityStats.value = {
+                    name: params.name,
+                    isCity: false
+                };
+                return;
+            }
+        }
     };
+
+
 
     const toggleAnimation = () => {
       if (isAnimating.value) { clearInterval(animationTimer); isAnimating.value = false; }
