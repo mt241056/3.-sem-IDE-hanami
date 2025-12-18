@@ -153,7 +153,7 @@
 
       <div class="bg-fuchsia-5 p-8 rounded-2xl border border-fuchsia-300 inset-shadow grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8" v-if="selectedCityName">
         <div class="space-y-6">
-          <h4 class="text-2xl font-bold text-gray-900 border-b border-fuchsia-200 pb-2">{{ selectedCityName }}</h4>
+          <h4 class="text-2xl font-bold text-gray-900 border-b border-fuchsia-200 pb-2">{{ selectedCityName }} {{ selectedYear }}</h4>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <p class="text-xs text-gray-500 uppercase font-bold">Current Bloom</p>
@@ -172,16 +172,10 @@
               <p class="text-lg font-extrabold text-gray-900">{{ citySpecificStats?.latestDate }}</p>
             </div>
           </div>
-          <div class="p-4 rounded-lg border border-fuchsia-300 shadow-sm">
-             <p class="text-sm font-medium text-gray-700">Trend vs National Average</p>
-             <p class="text-2xl font-gray-900 font-bold">
-              {{ Math.abs(citySpecificStats?.trendDiff || 0) }} Days {{ citySpecificStats?.trendStatus }}
-            </p>
-          </div>
         </div>
 
-        <div class="lg:col-span-2 h-[270px] rounded-xl p-2 border border-fuchsia-300 relative overflow-hidden">
-          <v-chart class="chart" :option="cityHistoryChartOption" autoresize />
+        <div class="lg:col-span-2 h-[350px] rounded-xl p-2 pb-8 border border-fuchsia-300 relative overflow-hidden">
+          <v-chart class="chart -mt-4" :option="cityHistoryChartOption" autoresize />
         </div>
       </div>
       <div class="bg-fuchsia-5 p-8 rounded-2xl border border-fuchsia-300 text-center mb-8 inset-shadow" v-else>
@@ -228,7 +222,7 @@
       </div>
     </div>
 
-    <div class="mt-8 space-y-6 max-w-6xl mx-auto bg-fuchsia-50 rounded-2xl p-6 border border-fuchsia-300 fixed left-0 right-0 bottom-8 shadow-outside z-50">
+    <div class="mt-8 space-y-6 max-w-7xl mx-auto bg-fuchsia-50 rounded-2xl p-6 border border-fuchsia-300 fixed left-0 right-0 bottom-8 shadow-outside z-50">
       <div class="flex items-center justify-between gap-4 p-4 rounded-lg bg-fuchsia-5 border border-fuchsia-300 inset-shadow">
         <label for="yearSlider" class="text-lg w-12 font-bold shrink-0">{{ selectedYear }}</label>
         
@@ -366,7 +360,7 @@
         tooltip: { trigger: 'axis' },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: false },
         xAxis: { type: 'category', data: cityData.map(d => d.seasonal_year) },
-        yAxis: { type: 'value', inverse: true, name: 'Day of Year', splitLine: { show: false } },
+        yAxis: { type: 'value', inverse: false, name: 'Days since Jan 1st', splitLine: { show: false } },
         series: [{
           name: 'Bloom Day',
           type: 'line',
@@ -446,7 +440,9 @@
 
     const chartOption = computed(() => ({
       backgroundColor: '#fff0',
-      title: { text: `Bloom Map ${selectedYear.value}`, left: 'center' },
+      title: { text: `Bloom Map ${selectedYear.value}`, left: 'center', 
+      subtext: 'Number oḟ days passed since January 1st', },
+      text: ['Later Bloom', 'Earlier Bloom'],
       visualMap: { min: 30, max: 150, calculable: true, inRange: { color: ['#FF4500', '#FFFF00', '#00BFFF'] }, left: 'center', orient: 'horizontal', bottom: 10 },
       geo: { map: "japan", roam: true, zoom: mapZoomLevel.value, center: [137.5, 38.0], itemStyle: { areaColor: '#fff', borderColor: '#444' } },
       series: [{ type: "scatter", coordinateSystem: "geo", symbolSize: cityPointSize.value, data: scatterData.value }]
@@ -458,7 +454,9 @@
             title: { text: `Bloom Analysis ${selectedYear.value}`, left: 'center' },
             xAxis: { type: 'value', name: xAxisKey.value },
             yAxis: { type: 'value', name: yAxisKey.value },
-            visualMap: { min: 30, max: 150, inRange: { color: ['#FF4500', '#FFFF00', '#00BFFF'] }, show: true },
+            
+      text: ['Later Bloom', 'Earlier Bloom'],
+            visualMap: { min: 30, max: 150, calculable: true, inRange: { color: ['#FF4500', '#FFFF00', '#00BFFF'] }, show: true, left:'center', orient:"horizontal" },
             series: [{ type: 'scatter', symbolSize: cityPointSize.value, data: scatterData.value.map(d => ({ name: d.name, value: [d.value[dataKeyMap[xAxisKey.value]], d.value[dataKeyMap[yAxisKey.value]], d.value[3]] })) }]
         };
     });
